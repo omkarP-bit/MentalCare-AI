@@ -10,7 +10,7 @@ MindCare AI is a revolutionary mental health support platform that combines AI-p
 
 ### 🎯 Key Features
 
-- **🤖 AI Emotion Recognition** - Real-time facial emotion analysis using AWS Rekognition
+- **🤖 AI Emotion Recognition** - Real-time facial emotion analysis using AWS Rekognition with camera integration
 - **🎮 Therapeutic Games** - 5 evidence-based games designed by mental health professionals
 - **💬 AI Chat Support** - 24/7 therapeutic conversations with crisis detection
 - **📋 Prescription Management** - Secure medical document upload and tracking
@@ -37,7 +37,14 @@ MindCare AI is a revolutionary mental health support platform that combines AI-p
 
 ## 🚀 Live Demo
 
-**🌐 Live URL:** [https://vdjd5r32v2tsptlunp3i62vtae0pqucx.lambda-url.us-east-1.on.aws/](https://vdjd5r32v2tsptlunp3i62vtae0pqucx.lambda-url.us-east-1.on.aws/)
+**🌐 Live URL:** [https://2qbgtrra45xrjhd3zpqh2cgvz40vplag.lambda-url.us-east-1.on.aws/](https://2qbgtrra45xrjhd3zpqh2cgvz40vplag.lambda-url.us-east-1.on.aws/)
+
+### 🎯 Try the Emotion Detection:
+1. Visit the live URL above
+2. Click **"Emotion AI"** in navigation
+3. Allow camera access when prompted
+4. Click **"Analyze Emotion"** for real-time facial analysis
+5. Get personalized therapeutic recommendations
 
 ## 🏗️ Architecture
 
@@ -62,7 +69,8 @@ MindCare AI is a revolutionary mental health support platform that combines AI-p
 ```
 mindcare-ai-project/
 ├── src/
-│   ├── frontend.py          # HTML/CSS/JS content
+│   ├── frontend.py          # HTML/CSS/JS content with camera UI
+│   ├── emotion_detector.py  # AWS Rekognition emotion analysis
 │   └── __init__.py
 ├── docs/
 │   ├── API.md              # API documentation
@@ -76,6 +84,7 @@ mindcare-ai-project/
 ├── assets/
 │   └── screenshots/        # Project screenshots
 ├── lambda_function.py      # Main Lambda handler
+├── deploy.sh              # Deployment script
 ├── README.md              # This file
 ├── LICENSE               # MIT License
 └── .gitignore           # Git ignore rules
@@ -106,16 +115,18 @@ python lambda_function.py
 # Package for Lambda
 zip -r mindcare-lambda.zip lambda_function.py src/
 
-# Deploy using AWS CLI
+# Deploy using deployment script
+./deploy.sh
+
+# Or manually update function
 aws lambda update-function-code \
-  --function-name MindCare-API-dev \
+  --function-name MindCare-AI-Platform \
   --zip-file fileb://mindcare-lambda.zip
 
-# Create function URL (if needed)
-aws lambda create-function-url-config \
-  --function-name MindCare-API-dev \
-  --auth-type NONE \
-  --cors AllowCredentials=false,AllowHeaders="*",AllowMethods="*",AllowOrigins="*"
+# Get function URL
+aws lambda get-function-url-config \
+  --function-name MindCare-AI-Platform \
+  --query 'FunctionUrl' --output text
 ```
 
 ## 🔧 API Endpoints
@@ -126,7 +137,7 @@ aws lambda create-function-url-config \
 | `/api/login` | POST | User authentication |
 | `/api/register` | POST | User registration |
 | `/api/prescription` | POST | Upload medical prescription |
-| `/api/emotion` | POST | Analyze facial emotion |
+| `/api/emotion` | POST | Analyze facial emotion with camera input |
 | `/api/chat` | POST | AI chat response |
 | `/api/game` | POST | Start game session |
 | `/health` | GET | Health check |
