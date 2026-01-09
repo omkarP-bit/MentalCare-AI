@@ -114,17 +114,34 @@ def handle_prescription(body):
         return api_response({'success': False, 'message': 'Prescription upload failed'}, 400)
 
 def analyze_emotion(body):
-    """Analyze facial emotion (demo mode)"""
-    emotions = ['Happy', 'Calm', 'Focused', 'Confident', 'Peaceful', 'Anxious', 'Sad']
-    emotion = random.choice(emotions)
-    confidence = random.randint(75, 95)
-    
-    return api_response({
-        'emotion': emotion,
-        'confidence': confidence,
-        'timestamp': datetime.now().isoformat(),
-        'recommendation': get_emotion_recommendation(emotion)
-    })
+    """Analyze facial emotion using AWS Rekognition"""
+    try:
+        from src.emotion_detector import analyze_facial_emotion
+        data = json.loads(body) if body else {}
+        image_data = data.get('image', '')
+        
+        if not image_data:
+            return api_response({'error': 'No image data provided'}, 400)
+        
+        result = analyze_facial_emotion(image_data)
+        result['timestamp'] = datetime.now().isoformat()
+        
+        return api_response(result)
+        
+    except Exception as e:
+        # Fallback to demo mode
+        emotions = ['HAPPY', 'CALM', 'SAD', 'ANXIOUS']
+        emotion = random.choice(emotions)
+        confidence = random.randint(75, 95)
+        
+        return api_response({
+            'success': True,
+            'primary_emotion': emotion,
+            'confidence': confidence,
+            'timestamp': datetime.now().isoformat(),
+            'recommendation': get_emotion_recommendation(emotion),
+            'note': 'Demo mode - real emotion detection unavailable'
+        })
 
 def chat_response(body):
     """Handle AI chat responses"""
@@ -194,13 +211,14 @@ def start_game(body):
 def get_emotion_recommendation(emotion):
     """Get recommendation based on detected emotion"""
     recommendations = {
-        'Happy': 'Great mood! Try Goal Quest to build on this positive energy',
-        'Calm': 'Perfect state for Zen Flow meditation to maintain balance',
-        'Focused': 'Excellent focus! Consider Thought Challenger for mental training',
-        'Confident': 'Great confidence! Try Safe Space Social to practice skills',
-        'Peaceful': 'Beautiful state! Maintain with Zen Flow meditation',
-        'Anxious': 'Try Breathing Garden for 40% anxiety reduction',
-        'Sad': 'Thought Challenger can help improve mood by 35%'
+        'HAPPY': 'Great mood! Try Goal Quest to build on this positive energy',
+        'CALM': 'Perfect state for Zen Flow meditation to maintain balance',
+        'SURPRISED': 'You seem alert! Good time for Thought Challenger',
+        'SAD': 'Thought Challenger can help improve mood by 35%',
+        'ANGRY': 'Try Breathing Garden for immediate emotional regulation',
+        'DISGUSTED': 'Zen Flow meditation can help process difficult emotions',
+        'FEARFUL': 'Breathing Garden shows 40% anxiety reduction',
+        'CONFUSED': 'Safe Space Social can help build confidence and clarity'
     }
     return recommendations.get(emotion, 'Try any of our therapeutic games for wellness')
 

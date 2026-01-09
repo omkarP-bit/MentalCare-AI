@@ -88,6 +88,7 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#ffffff;overflow-x:
 <button class="nav-btn active" onclick="showSection('hero')">Home</button>
 <button class="nav-btn" onclick="showSection('features')">Features</button>
 <button class="nav-btn" onclick="showSection('games')">Games</button>
+<button class="nav-btn" onclick="showSection('emotion')">Emotion AI</button>
 <button class="nav-btn" onclick="showSection('chat')">AI Chat</button>
 <button class="nav-btn" onclick="showLogin()">Login</button>
 </nav>
@@ -95,6 +96,7 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#ffffff;overflow-x:
 <nav class="nav" id="userNav" style="display:none">
 <button class="nav-btn active" onclick="showSection('dashboard')">Dashboard</button>
 <button class="nav-btn" onclick="showSection('games')">Games</button>
+<button class="nav-btn" onclick="showSection('emotion')">Emotion AI</button>
 <button class="nav-btn" onclick="showSection('chat')">AI Chat</button>
 <button class="nav-btn" onclick="showSection('prescription')">Prescription</button>
 <button class="nav-btn" onclick="logout()">Logout</button>
@@ -311,6 +313,33 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#ffffff;overflow-x:
 <p><strong>Result:</strong> 42% goal achievement</p>
 <p><strong>Duration:</strong> 15-25 minutes</p>
 <button class="btn" onclick="startGameSession('goals')">Start Game</button>
+</div>
+</div>
+</div>
+</section>
+
+<section id="emotion" class="section" style="display:none">
+<div class="container">
+<h2 class="section-title">AI Emotion Recognition</h2>
+<div class="chat-section">
+<h3 style="margin-bottom:30px;font-size:1.8rem;text-align:center">Real-time Facial Emotion Analysis</h3>
+<div style="display:flex;flex-direction:column;align-items:center;gap:30px">
+<div id="cameraContainer" style="position:relative;width:400px;height:300px;background:rgba(0,0,0,0.3);border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)">
+<video id="cameraVideo" width="400" height="300" autoplay style="display:none;border-radius:16px"></video>
+<canvas id="cameraCanvas" width="400" height="300" style="display:none"></canvas>
+<div id="cameraPlaceholder" style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:1.1rem">
+Click "Start Camera" to begin emotion analysis
+</div>
+</div>
+<div style="display:flex;gap:15px;flex-wrap:wrap;justify-content:center">
+<button class="btn" onclick="startCamera()" id="startCameraBtn">Start Camera</button>
+<button class="btn" onclick="captureEmotion()" id="captureBtn" style="display:none">Analyze Emotion</button>
+<button class="btn" onclick="stopCamera()" id="stopCameraBtn" style="display:none">Stop Camera</button>
+</div>
+<div id="emotionResults" style="display:none;background:rgba(255,255,255,0.05);border-radius:16px;padding:30px;margin-top:20px;border:1px solid rgba(255,255,255,0.1);text-align:center;min-width:400px">
+<h4 style="margin-bottom:20px;font-size:1.5rem;color:#3b82f6">Emotion Analysis Results</h4>
+<div id="emotionData"></div>
+</div>
 </div>
 </div>
 </div>
@@ -561,7 +590,7 @@ addMessage("Welcome to MindCare AI! I'm here to support your mental health journ
 }, 1000);
 
 window.addEventListener('scroll', () => {
-const sections = ['hero', 'features', 'games', 'chat'];
+const sections = ['hero', 'features', 'games', 'emotion', 'chat'];
 const scrollPos = window.scrollY + 100;
 sections.forEach(section => {
 const element = document.getElementById(section);
@@ -572,9 +601,89 @@ updateNavButtons(section);
 });
 
 document.querySelectorAll('section').forEach(section => {
-if (section.id === 'login' || section.id === 'register' || section.id === 'dashboard' || section.id === 'prescription') {
+if (section.id === 'login' || section.id === 'register' || section.id === 'dashboard' || section.id === 'prescription' || section.id === 'emotion') {
 section.style.display = 'none';
 }
 });
+
+// Camera and Emotion Detection Functions
+let cameraStream = null;
+
+function startCamera() {
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+cameraStream = stream;
+const video = document.getElementById('cameraVideo');
+video.srcObject = stream;
+document.getElementById('cameraPlaceholder').style.display = 'none';
+video.style.display = 'block';
+document.getElementById('startCameraBtn').style.display = 'none';
+document.getElementById('captureBtn').style.display = 'inline-block';
+document.getElementById('stopCameraBtn').style.display = 'inline-block';
+})
+.catch(err => {
+alert('Camera access denied or not available: ' + err.message);
+});
+}
+
+function stopCamera() {
+if (cameraStream) {
+cameraStream.getTracks().forEach(track => track.stop());
+cameraStream = null;
+}
+const video = document.getElementById('cameraVideo');
+video.style.display = 'none';
+document.getElementById('cameraPlaceholder').style.display = 'flex';
+document.getElementById('startCameraBtn').style.display = 'inline-block';
+document.getElementById('captureBtn').style.display = 'none';
+document.getElementById('stopCameraBtn').style.display = 'none';
+document.getElementById('emotionResults').style.display = 'none';
+}
+
+function captureEmotion() {
+const video = document.getElementById('cameraVideo');
+const canvas = document.getElementById('cameraCanvas');
+const ctx = canvas.getContext('2d');
+
+ctx.drawImage(video, 0, 0, 400, 300);
+const imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+// Show loading
+document.getElementById('emotionResults').style.display = 'block';
+document.getElementById('emotionData').innerHTML = '<p style="color:#94a3b8">Analyzing your facial expression...</p>';
+
+// Send to backend for emotion analysis
+fetch('/api/emotion', {
+method: 'POST',
+headers: {'Content-Type': 'application/json'},
+body: JSON.stringify({ image: imageData })
+})
+.then(response => response.json())
+.then(data => {
+if (data.success) {
+document.getElementById('emotionData').innerHTML = `
+<div style="margin-bottom:20px">
+<p style="font-size:1.3rem;margin-bottom:10px"><strong>Primary Emotion:</strong> <span style="color:#3b82f6">${data.primary_emotion}</span></p>
+<p style="font-size:1.1rem;margin-bottom:15px"><strong>Confidence:</strong> ${data.confidence}%</p>
+</div>
+<div style="margin-bottom:20px">
+<h5 style="margin-bottom:10px;color:#a855f7">All Detected Emotions:</h5>
+${data.all_emotions.map(e => `<p style="margin:5px 0">${e.emotion}: ${e.confidence}%</p>`).join('')}
+</div>
+<div style="background:rgba(59,130,246,0.1);border-radius:12px;padding:20px;border:1px solid rgba(59,130,246,0.2)">
+<h5 style="margin-bottom:10px;color:#3b82f6">Recommendation:</h5>
+<p style="line-height:1.6">${data.recommendation}</p>
+</div>
+${data.note ? `<p style="margin-top:15px;color:#94a3b8;font-size:0.9rem">${data.note}</p>` : ''}
+`;
+} else {
+document.getElementById('emotionData').innerHTML = `<p style="color:#ef4444">${data.message || 'Emotion analysis failed'}</p>`;
+}
+})
+.catch(err => {
+document.getElementById('emotionData').innerHTML = '<p style="color:#ef4444">Error analyzing emotion. Please try again.</p>';
+console.error('Emotion analysis error:', err);
+});
+}
 </script>
 </body></html>'''
